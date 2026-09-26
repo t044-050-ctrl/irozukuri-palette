@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>いろづくりパレット</title>
-
-<meta property="og:title" content="いろづくりパレット">
-<meta property="og:description" content="【図画工作/絵画/混色】｢〇色ってどうやって作るの？｣に答えてくれる学習アプリです。写真から色を指定することもできます。">
-<meta property="og:type" content="website">
     
     <!-- Google Fonts: Mochiy Pop One & Zen Maru Gothic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -206,19 +202,17 @@
             <canvas id="photo-canvas" class="w-full h-full object-contain canvas-eyedropper hidden touch-none"></canvas>
             
             <!-- Custom Eyedropper Target (+) with Color Box (□) on top -->
-            <div id="picker-target" class="absolute pointer-events-none hidden z-20" style="transform: translate(-50%, -50%);">
+            <div id="picker-target" class="absolute pointer-events-none hidden z-20 w-5 h-5 flex items-center justify-center" style="transform: translate(-50%, -50%);">
                 <!-- Color Box (□) placed ABOVE (+) -->
                 <div id="picker-color-box" class="w-7 h-7 md:w-8 md:h-8 rounded-md border-2 border-white shadow-md absolute left-1/2 -translate-x-1/2 bottom-full mb-1 transition-transform" style="box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.3); background-color: #D94A4A;"></div>
                 
-                <!-- Crosshair (+) Icon -->
-                <div class="w-5 h-5 relative flex items-center justify-center">
-                    <svg viewBox="0 0 20 20" class="w-5 h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]">
-                        <line x1="10" y1="0" x2="10" y2="20" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-                        <line x1="0" y1="10" x2="20" y2="10" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-                        <line x1="10" y1="1" x2="10" y2="19" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
-                        <line x1="1" y1="10" x2="19" y2="10" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                </div>
+                <!-- Crosshair (+) Icon Centered Exactly -->
+                <svg viewBox="0 0 20 20" class="w-5 h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] shrink-0">
+                    <line x1="10" y1="0" x2="10" y2="20" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                    <line x1="0" y1="10" x2="20" y2="10" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                    <line x1="10" y1="1" x2="10" y2="19" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
+                    <line x1="1" y1="10" x2="19" y2="10" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
             </div>
             
             <!-- Centered Illustration, Sample Buttons & Guide Text -->
@@ -895,11 +889,37 @@
 
                 if (clientX === undefined || clientY === undefined) return null;
 
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
+                // canvas内部解像度のアスペクト比とDOM表示矩形のアスペクト比の比率計算
+                const imgRatio = canvas.width / canvas.height;
+                const rectRatio = rect.width / rect.height;
 
-                let x = Math.floor((clientX - rect.left) * scaleX);
-                let y = Math.floor((clientY - rect.top) * scaleY);
+                let renderWidth, renderHeight, offsetX, offsetY;
+
+                if (imgRatio > rectRatio) {
+                    // 画像が横長：上下に余白ができる
+                    renderWidth = rect.width;
+                    renderHeight = rect.width / imgRatio;
+                    offsetX = 0;
+                    offsetY = (rect.height - renderHeight) / 2;
+                } else {
+                    // 画像が縦長：左右に余白ができる
+                    renderWidth = rect.height * imgRatio;
+                    renderHeight = rect.height;
+                    offsetX = (rect.width - renderWidth) / 2;
+                    offsetY = 0;
+                }
+
+                // ポインター位置から画像実際の描画領域内での相対位置を算出
+                const pointerX = clientX - rect.left - offsetX;
+                const pointerY = clientY - rect.top - offsetY;
+
+                // 描画範囲外の場合は画像端にクランプ
+                const clampedX = Math.max(0, Math.min(renderWidth, pointerX));
+                const clampedY = Math.max(0, Math.min(renderHeight, pointerY));
+
+                // 実際のキャンバス画像ピクセル座標に正確に変換
+                let x = Math.floor((clampedX / renderWidth) * canvas.width);
+                let y = Math.floor((clampedY / renderHeight) * canvas.height);
 
                 x = Math.max(0, Math.min(canvas.width - 1, x));
                 y = Math.max(0, Math.min(canvas.height - 1, y));
@@ -921,6 +941,7 @@
                 const coords = getCanvasCoords(evt);
                 if (coords) {
                     sampleCanvasColor(coords.x, coords.y);
+                    sampleCanvasHoverColor(coords.x, coords.y);
                     updatePickerTargetPosition(coords.clientX, coords.clientY);
 
                     // Click animation feedback on the □ color box
@@ -933,7 +954,7 @@
             };
         }
 
-        // Display (+) crosshair & □ color preview box
+        // Display (+) crosshair & □ color preview box with exact center position
         function updatePickerTargetPosition(clientX, clientY) {
             const target = document.getElementById('picker-target');
             const container = document.getElementById('photo-container').getBoundingClientRect();
