@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>いろづくりパレット</title>
+    
+    <!-- Google Fonts: Mochiy Pop One & Zen Maru Gothic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #FFFFFF;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            color: #2D3748;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .font-title {
+            font-family: 'Mochiy Pop One', cursive;
+        }
+
+        /* Pop Rainbow Gradient Title with Outer White Outline */
+        .rainbow-title {
+            background: linear-gradient(135deg, #FF4B4B 0%, #FF8533 20%, #FFC726 40%, #2CDA88 60%, #3B82F6 80%, #A855F7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            filter: 
+                drop-shadow(2px 0 0 #FFFFFF) 
+                drop-shadow(-2px 0 0 #FFFFFF) 
+                drop-shadow(0 2px 0 #FFFFFF) 
+                drop-shadow(0 -2px 0 #FFFFFF) 
+                drop-shadow(1.5px 1.5px 0 #FFFFFF) 
+                drop-shadow(-1.5px -1.5px 0 #FFFFFF) 
+                drop-shadow(1.5px -1.5px 0 #FFFFFF) 
+                drop-shadow(-1.5px 1.5px 0 #FFFFFF)
+                drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.12));
+        }
+
+        /* Flat Color Panel - Pure flat color representation */
+        .flat-square {
+            position: relative;
+            border-radius: 0.85rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: transform 0.15s ease;
+        }
+
+        .color-card-container:hover .flat-square {
+            transform: scale(1.03);
+        }
+
+        .color-card-container:active .flat-square {
+            transform: scale(0.97);
+        }
+
+        /* Color Picker Ring Overlay for Photo Page (Small compact circle) */
+        #picker-ring {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid #FFFFFF;
+            box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: width 0.1s ease, height 0.1s ease;
+        }
+
+        #picker-ring.active-click {
+            transform: translate(-50%, -50%) scale(1.3);
+        }
+
+        /* Custom small circle cursor for canvas eyedropper */
+        .canvas-eyedropper {
+            cursor: crosshair;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F0EA;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col justify-between p-1.5 md:p-3 max-w-[1600px] mx-auto overflow-hidden bg-white">
+
+    <!-- App Header & Navigation -->
+    <header class="w-full mb-1 flex-shrink-0">
+        <div class="flex items-center justify-between gap-2 bg-white/95 px-3 py-1.5 md:px-4 md:py-2 rounded-2xl shadow-sm border border-black/5 backdrop-blur-md">
+            
+            <!-- Cute Palette Mascot SVG & Rainbow Title -->
+            <div class="flex items-center gap-2 md:gap-3 cursor-pointer" onclick="navigateToLevel(1)">
+                <div class="w-7 h-7 md:w-9 md:h-9 flex-shrink-0 drop-shadow-sm">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <path d="M 85,45 C 90,20 65,5 45,10 C 20,15 5,35 10,65 C 15,90 45,98 70,85 C 80,80 85,65 75,55 C 68,48 75,40 85,45 Z" fill="#F3C68F" stroke="#C88E4B" stroke-width="4" stroke-linejoin="round"/>
+                        <ellipse cx="78" cy="70" rx="6" ry="8" fill="#FAFAFA" stroke="#C88E4B" stroke-width="3"/>
+                        <circle cx="30" cy="25" r="8" fill="#FF4B4B" />
+                        <circle cx="55" cy="20" r="8" fill="#FFD026" />
+                        <circle cx="22" cy="48" r="8" fill="#2CDA88" />
+                        <circle cx="32" cy="72" r="8" fill="#3B82F6" />
+                        <circle cx="58" cy="80" r="8" fill="#9333EA" />
+                    </svg>
+                </div>
+
+                <div>
+                    <h1 class="font-title text-lg md:text-2xl tracking-wider rainbow-title py-0.5">
+                        いろづくりパレット
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="flex items-center gap-2">
+                <button id="btn-photo" onclick="navigateToPhotoPage()" class="px-3 py-1.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-500 hover:to-emerald-600 text-white font-bold rounded-xl shadow transition flex items-center gap-1.5 text-xs md:text-sm">
+                    <i class="fa-solid fa-camera"></i> しゃしんから
+                </button>
+
+                <button id="btn-home" onclick="navigateToLevel(1)" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold rounded-xl shadow transition flex items-center gap-1.5 text-xs md:text-sm">
+                    <i class="fa-solid fa-house"></i> もどる
+                </button>
+            </div>
+        </div>
+
+        <!-- Breadcrumb Level Tracker -->
+        <div id="breadcrumb-bar" class="mt-0.5 flex items-center gap-2 px-2 text-xs font-bold text-gray-600">
+            <span id="crumb-1" class="cursor-pointer text-amber-600 underline flex items-center gap-1" onclick="navigateToLevel(1)">
+                <i class="fa-solid fa-shapes"></i> 第1階層：きほんの20色
+            </span>
+            <span id="crumb-2-arrow" class="hidden text-gray-400"><i class="fa-solid fa-chevron-right text-xs"></i></span>
+            <span id="crumb-2" class="hidden text-gray-800 font-bold flex items-center gap-1">
+                第2階層：にている15色
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content Area: Palette Views -->
+    <main id="main-palette-view" class="w-full flex-grow flex flex-col justify-center my-0.5 min-h-0 overflow-hidden">
+        
+        <!-- Parent Color Header (Visible only in Level 2) -->
+        <div id="parent-color-bar" class="hidden mb-1 bg-white p-1.5 px-3 rounded-xl border border-black/5 items-center justify-between shadow-xs flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-500 font-bold">もとにする色:</span>
+                <div id="parent-color-swatch" class="w-4 h-4 rounded-md shadow-inner border border-black/10"></div>
+                <span id="parent-color-name" class="font-title text-xs md:text-sm text-gray-800">赤</span>
+                <span id="parent-color-hex" class="text-xs font-mono text-gray-400">#D94A4A</span>
+            </div>
+        </div>
+
+        <!-- Color Cards Grid Container -->
+        <div id="palette-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-2 flex-1 min-h-0 items-stretch overflow-y-auto pr-0.5">
+            <!-- Dynamic Cards Loaded Here -->
+        </div>
+    </main>
+
+    <!-- Photo Extraction Separate Page View (Expanded to full available space) -->
+    <main id="photo-page-view" class="hidden w-full flex-1 mx-auto flex-col justify-between my-0.5 min-h-0 overflow-hidden bg-white p-2 md:p-3 rounded-2xl shadow-sm border border-gray-200">
+        <!-- Photo Header -->
+        <div class="flex items-center justify-between mb-1 pb-1.5 border-b border-gray-100 flex-wrap gap-2 shrink-0">
+            <div>
+                <h2 class="font-title text-xs md:text-base text-teal-800 flex items-center gap-2">
+                    <i class="fa-solid fa-camera"></i> しゃしんから色をさがそう
+                </h2>
+                <p class="text-[10px] md:text-xs text-gray-500 mt-0.5">しゃしんの上でカーソルを動かして、＋（プラス）の場所をクリック（タップ）すると色を決定するよ！</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btn-clear-photo" onclick="clearPhoto()" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl shadow-xs transition text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i> しゃしんをけす
+                </button>
+                <button onclick="triggerPhotoUpload()" class="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl shadow transition text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-arrow-up"></i> しゃしんをえらぶ
+                </button>
+                <input type="file" id="photo-input" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handlePhotoSelect(event)">
+            </div>
+        </div>
+
+        <!-- Canvas Area for Photo with Drag & Drop Zone -->
+        <div id="photo-container" 
+             ondragover="handleDragOver(event)" 
+             ondragleave="handleDragLeave(event)" 
+             ondrop="handleDrop(event)"
+             class="relative flex-1 min-h-0 bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-dashed border-gray-300 transition my-0.5 w-full h-full">
+            
+            <canvas id="photo-canvas" class="w-full h-full object-contain canvas-eyedropper hidden touch-none"></canvas>
+            
+            <!-- Custom Eyedropper Target (+) with Color Box (□) on top -->
+            <div id="picker-target" class="absolute pointer-events-none hidden z-20" style="transform: translate(-50%, -50%);">
+                <!-- Color Box (□) placed ABOVE (+) -->
+                <div id="picker-color-box" class="w-7 h-7 md:w-8 md:h-8 rounded-md border-2 border-white shadow-md absolute left-1/2 -translate-x-1/2 bottom-full mb-1 transition-transform" style="box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.3); background-color: #D94A4A;"></div>
+                
+                <!-- Crosshair (+) Icon -->
+                <div class="w-5 h-5 relative flex items-center justify-center">
+                    <svg viewBox="0 0 20 20" class="w-5 h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]">
+                        <line x1="10" y1="0" x2="10" y2="20" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="0" y1="10" x2="20" y2="10" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                        <line x1="10" y1="1" x2="10" y2="19" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="1" y1="10" x2="19" y2="10" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Centered Illustration, Sample Buttons & Guide Text -->
+            <div id="photo-placeholder-text" class="flex flex-col items-center justify-center text-center p-4 text-gray-400 w-full">
+                <div class="w-14 h-14 mb-2 text-teal-400 flex items-center justify-center bg-teal-50 rounded-full border border-teal-100">
+                    <i class="fa-solid fa-image text-2xl"></i>
+                </div>
+                <p class="text-xs md:text-sm font-bold text-gray-700 mb-1">しゃしんをえらぶか、ここにドラッグ＆ドロップしてね</p>
+                <p class="text-[11px] text-gray-400 mb-3">※うまく読み込めない場合は、下のサンプル画像でもためせます！</p>
+
+                <!-- Sample Images Quick Selection -->
+                <div class="flex flex-wrap items-center justify-center gap-1.5">
+                    <button onclick="loadSampleImage('flowers')" class="px-2.5 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-bold shadow-2xs transition flex items-center gap-1">
+                        <i class="fa-solid fa-seedling text-emerald-500"></i> お花畑
+                    </button>
+                    <button onclick="loadSampleImage('sky')" class="px-2.5 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-bold shadow-2xs transition flex items-center gap-1">
+                        <i class="fa-solid fa-sun text-amber-500"></i> 夕やけ空
+                    </button>
+                    <button onclick="loadSampleImage('aurora')" class="px-2.5 py-1 bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-bold shadow-2xs transition flex items-center gap-1">
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> オーロラ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Picked Color Footer Bar -->
+        <div class="flex items-center justify-between bg-teal-50 p-2 rounded-xl border border-teal-200 mt-0.5 shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div id="picked-color-swatch" class="w-8 h-8 md:w-9 md:h-9 rounded-xl shadow-md border border-gray-200" style="background-color: #D94A4A;"></div>
+                <div>
+                    <span class="text-[10px] text-teal-700 font-bold block leading-none">えらんだ色</span>
+                    <span id="picked-color-hex" class="font-mono font-bold text-xs md:text-sm text-gray-800">#D94A4A</span>
+                </div>
+            </div>
+            <button onclick="usePickedColor()" class="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-title text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-palette"></i> この色で作る！（にている15色へ）
+            </button>
+        </div>
+    </main>
+
+    <!-- Detailed Recipe Modal -->
+    <div id="recipe-modal" onclick="closeModal()" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 cursor-pointer">
+        <div onclick="closeModal()" class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-amber-300 relative transform transition-all scale-100 cursor-pointer">
+            <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg">
+                ✕
+            </button>
+
+            <div class="flex items-center gap-4 mb-4">
+                <div id="modal-swatch" class="w-16 h-16 rounded-2xl border border-gray-200 flex-shrink-0"></div>
+                <div>
+                    <span id="modal-level-tag" class="text-xs font-bold text-amber-600 bg-amber-100 px-2.5 py-0.5 rounded-full">第1階層</span>
+                    <p id="modal-hex-code" class="text-sm font-mono font-bold text-gray-500 mt-1">#D94A4A</p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 mb-2">
+                <label class="text-xs font-bold text-amber-900 block mb-2">🧪 つくりかた（レシピ）：</label>
+                <!-- Rendered 1 row per color ingredient -->
+                <div id="modal-recipe-string" class="w-full flex flex-col gap-2">
+                    <!-- Dynamic lines loaded here -->
+                </div>
+            </div>
+            
+            <p class="text-center text-xs text-gray-400 mt-3 font-bold">画面をタップすると閉じるよ</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-message" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs md:text-sm font-bold transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-info text-amber-400"></i>
+        <span id="toast-text">メッセージ</span>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           いろづくりパレット Application Logic
+           ========================================================================== */
+
+        // Standard School Paints Base Mapping (11 Colors)
+        const BASE_PAINTS = {
+            '赤': '#D71803',
+            '朱色': '#FC4E0F',
+            '黄色': '#FED511',
+            '黄緑': '#5ACD37',
+            '緑': '#29A961',
+            '水色': '#AFDFE4',
+            '青': '#215DFF',
+            '茶色': '#8B4513',
+            'うすだいだい': '#FFBA84',
+            '白': '#FFFFFF',
+            '黒': '#000000'
+        };
+
+        // Application State
+        let currentLevel = 1; // 1, 2, or 'photo'
+        let selectedL1Index = 0;
+        let customParentColor = null;
+        let pickedColorHex = '#D94A4A';
+
+        // Navigation Functions
+        function navigateToLevel(level, l1Index = 0) {
+            currentLevel = level;
+            
+            const mainView = document.getElementById('main-palette-view');
+            const photoView = document.getElementById('photo-page-view');
+            const parentBar = document.getElementById('parent-color-bar');
+            const crumb2Arrow = document.getElementById('crumb-2-arrow');
+            const crumb2 = document.getElementById('crumb-2');
+
+            photoView.classList.add('hidden');
+            photoView.classList.remove('flex');
+            mainView.classList.remove('hidden');
+            mainView.classList.add('flex');
+
+            if (level === 1) {
+                customParentColor = null;
+                parentBar.classList.add('hidden');
+                parentBar.classList.remove('flex');
+                crumb2Arrow.classList.add('hidden');
+                crumb2.classList.add('hidden');
+            } else if (level === 2) {
+                if (typeof l1Index === 'number') {
+                    selectedL1Index = l1Index;
+                }
+                parentBar.classList.remove('hidden');
+                parentBar.classList.add('flex');
+                crumb2Arrow.classList.remove('hidden');
+                crumb2.classList.remove('hidden');
+
+                const swatch = document.getElementById('parent-color-swatch');
+                const nameEl = document.getElementById('parent-color-name');
+                const hexEl = document.getElementById('parent-color-hex');
+
+                if (customParentColor) {
+                    const hex = `#${customParentColor}`;
+                    swatch.style.backgroundColor = hex;
+                    nameEl.innerText = 'しゃしんの色';
+                    hexEl.innerText = hex;
+                } else {
+                    const parentColor = LEVEL_1_DATA[selectedL1Index];
+                    swatch.style.backgroundColor = parentColor.hex;
+                    // In Level 2 top header bar, display as 1 line without <br> (e.g. ペールオレンジ)
+                    nameEl.innerText = parentColor.name.replace('<br>', '');
+                    hexEl.innerText = parentColor.hex;
+                }
+            }
+
+            renderPaletteGrid();
+        }
+
+        function navigateToPhotoPage() {
+            currentLevel = 'photo';
+            const mainView = document.getElementById('main-palette-view');
+            const photoView = document.getElementById('photo-page-view');
+
+            mainView.classList.add('hidden');
+            mainView.classList.remove('flex');
+            photoView.classList.remove('hidden');
+            photoView.classList.add('flex');
+        }
+
+        // Level 1: 20 Base Colors
+        const LEVEL_1_DATA = [
+            { id: 1, name: '赤', hex: '#D71803', baseIngredients: { '赤': 4 } },
+            { id: 2, name: '朱色', hex: '#FC4E0F', baseIngredients: { '朱色': 4 } },
+            { id: 3, name: 'オレンジ', hex: '#FFA500', baseIngredients: { '朱色': 2, '黄色': 2 } },
+            { id: 4, name: '黄色', hex: '#FED511', baseIngredients: { '黄色': 4 } },
+            { id: 5, name: '黄緑', hex: '#5ACD37', baseIngredients: { '黄色': 2.5, '黄緑': 1.5 } },
+            { id: 6, name: '緑', hex: '#29A961', baseIngredients: { '緑': 2.5, '黄緑': 1.5 } },
+            { id: 7, name: '深い緑', hex: '#006400', baseIngredients: { '緑': 3, '黄緑': 0.5, '茶色': 0.5 } },
+            { id: 8, name: '水色', hex: '#AFDFE4', baseIngredients: { '水色': 3, '白': 1 } },
+            { id: 9, name: '青', hex: '#215DFF', baseIngredients: { '青': 3.5, '水色': 0.3, '白': 0.2 } },
+            { id: 10, name: '紫', hex: '#800080', baseIngredients: { '青': 2, '赤': 1.5, '白': 0.5 } },
+            { id: 11, name: 'ピンク', hex: '#FFC0CB', baseIngredients: { '赤': 3, '白': 1 } },
+            { id: 12, name: '茶色', hex: '#8B4513', baseIngredients: { '茶色': 4 } },
+            { id: 13, name: '黄土色', hex: '#B28A4A', baseIngredients: { '茶色': 1.5, '黄色': 1.5, '朱色': 1 } },
+            { id: 14, name: '金色系', hex: '#C5A34A', baseIngredients: { '黄色': 2, '朱色': 1, '茶色': 1 } },
+            { id: 15, name: 'ペール<br>オレンジ', hex: '#E7B28C', baseIngredients: { 'うすだいだい': 3, '白': 1 } },
+            { id: 16, name: '白', hex: '#F8F7F2', baseIngredients: { '白': 4 } },
+            { id: 17, name: '明るいグレー', hex: '#D9D9D4', baseIngredients: { '白': 3.5, '黒': 0.5 } },
+            { id: 18, name: 'グレー', hex: '#A9AAA5', baseIngredients: { '白': 3, '黒': 1 } },
+            { id: 19, name: '濃いグレー', hex: '#686A68', baseIngredients: { '白': 1.5, '黒': 2.5 } },
+            { id: 20, name: '黒', hex: '#292A29', baseIngredients: { '黒': 4 } }
+        ];
+
+        function formatIngredientsToString(ingMap) {
+            let parts = [];
+            for (let [key, val] of Object.entries(ingMap)) {
+                let rounded = Math.round(val * 10) / 10;
+                if (rounded > 0) parts.push(`${key} ${rounded}`);
+            }
+            return parts.join('  ');
+        }
+
+        function hexToHsl(hex) {
+            let r = parseInt(hex.slice(1, 3), 16) / 255;
+            let g = parseInt(hex.slice(3, 5), 16) / 255;
+            let b = parseInt(hex.slice(5, 7), 16) / 255;
+
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h * 360, s * 100, l * 100];
+        }
+
+        function hslToHex(h, s, l) {
+            s /= 100;
+            l /= 100;
+            let c = (1 - Math.abs(2 * l - 1)) * s;
+            let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            let m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+            let rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+            let gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+            let bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+
+            return `#${rHex}${gHex}${bHex}`.toUpperCase();
+        }
+
+        const BROAD_L2_OFFSETS = [
+            { dh: 0,   ds: 0,   dl: 0,   mod: {} },
+            { dh: -6,  ds: 15,  dl: 12,  mod: { '白': 0.8 } },
+            { dh: 6,   ds: -10, dl: -14, mod: { '茶色': 0.4 } },
+            { dh: -14, ds: 20,  dl: 4,   mod: { '朱色': 0.6 } },
+            { dh: 14,  ds: 10,  dl: -4,  mod: { '青': 0.5 } },
+            { dh: -8,  ds: -25, dl: 18,  mod: { '白': 1.2, 'うすだいだい': 0.3 } },
+            { dh: 8,   ds: 25,  dl: 8,   mod: { '赤': 0.5 } },
+            { dh: -20, ds: -15, dl: -8,  mod: { '茶色': 0.5 } },
+            { dh: 20,  ds: -5,  dl: 10,  mod: { '水色': 0.6 } },
+            { dh: -10, ds: 30,  dl: -10, mod: { '緑': 0.4 } },
+            { dh: 10,  ds: -30, dl: 22,  mod: { '白': 1.5 } },
+            { dh: -18, ds: 12,  dl: -18, mod: { '茶色': 0.8, '青': 0.4 } },
+            { dh: 18,  ds: 22,  dl: -2,  mod: { '青': 0.7 } },
+            { dh: -5,  ds: 35,  dl: 2,   mod: { '朱色': 0.8 } },
+            { dh: 12,  ds: -18, dl: -12, mod: { '茶色': 0.6, '白': 0.4 } }
+        ];
+
+        // Function to build normalized logical paint recipes (total sum ~ 4.0)
+        function createLogicalChildRecipe(baseIngredients, mod) {
+            let result = { ...baseIngredients };
+            
+            // Find main primary paint ingredient in base
+            let primaryKey = Object.keys(result).reduce((a, b) => result[a] > result[b] ? a : b, Object.keys(result)[0]);
+
+            for (let [modPaint, modAmt] of Object.entries(mod)) {
+                if (modPaint === primaryKey) {
+                    result[modPaint] = result[modPaint];
+                } else {
+                    result[primaryKey] = Math.max(0.4, result[primaryKey] - modAmt);
+                    result[modPaint] = (result[modPaint] || 0) + modAmt;
+                }
+            }
+
+            // Normalize so total paint sum stays around 4.0 parts
+            let currentTotal = Object.values(result).reduce((a, b) => a + b, 0);
+            if (currentTotal > 0) {
+                let scale = 4.0 / currentTotal;
+                for (let k in result) {
+                    result[k] = Math.round(result[k] * scale * 10) / 10;
+                }
+            }
+            return result;
+        }
+
+        const COLOR_DATABASE = {};
+
+        // 金閣寺の建物の色（陽光の金、影の金、アンティーク金など）から厳選した15色と絵の具レシピ（指定11色のみ使用）
+        const KINKAKUJI_GOLD_15 = [
+            { id: '14-1', hex: '#FFE56A', recipe: '黄色 2.5  白 1  朱色 0.5' },
+            { id: '14-2', hex: '#F4E297', recipe: '黄色 2  白 1.5  うすだいだい 0.5' },
+            { id: '14-3', hex: '#FFD700', recipe: '黄色 3  朱色 0.5  白 0.5' },
+            { id: '14-4', hex: '#E5B82A', recipe: '黄色 2.5  朱色 0.8  茶色 0.7' },
+            { id: '14-5', hex: '#E6A128', recipe: '黄色 2.2  朱色 1.2  茶色 0.6' },
+            { id: '14-6', hex: '#D49B19', recipe: '黄色 2.0  朱色 1.0  茶色 1.0' },
+            { id: '14-7', hex: '#CFA024', recipe: '黄色 2.3  茶色 1.0  朱色 0.7' },
+            { id: '14-8', hex: '#B88B22', recipe: '黄色 2.0  茶色 1.5  朱色 0.5' },
+            { id: '14-9', hex: '#A8872A', recipe: '黄色 2.0  茶色 1.2  黄緑 0.5  赤 0.3' },
+            { id: '14-10', hex: '#AD821E', recipe: '茶色 1.8  黄色 1.7  朱色 0.5' },
+            { id: '14-11', hex: '#9B7214', recipe: '茶色 2.0  黄色 1.2  青 0.5  朱色 0.3' },
+            { id: '14-12', hex: '#805A10', recipe: '茶色 2.2  黄色 1.0  黒 0.8' },
+            { id: '14-13', hex: '#69480C', recipe: '茶色 2.5  黒 1.0  黄色 0.5' },
+            { id: '14-14', hex: '#54390A', recipe: '茶色 2.0  黒 1.5  黄色 0.5' },
+            { id: '14-15', hex: '#EED94C', recipe: '黄色 2.5  白 1.0  朱色 0.5' }
+        ];
+
+        LEVEL_1_DATA.forEach((l1, l1Index) => {
+            COLOR_DATABASE[l1Index] = [];
+
+            // 金色系（id: 14）の場合は金閣寺の15色データを適用
+            if (l1.id === 14) {
+                COLOR_DATABASE[l1Index] = KINKAKUJI_GOLD_15;
+                return;
+            }
+
+            const [h, s, l] = hexToHsl(l1.hex);
+
+            for (let k = 0; k < 15; k++) {
+                const off = BROAD_L2_OFFSETS[k];
+                let newH = (h + off.dh + 360) % 360;
+                let newS = Math.min(100, Math.max(10, s + off.ds));
+                let newL = Math.min(92, Math.max(12, l + off.dl));
+
+                const childHex = hslToHex(newH, newS, newL);
+
+                let childIngredients = createLogicalChildRecipe(l1.baseIngredients, off.mod);
+
+                COLOR_DATABASE[l1Index].push({
+                    id: `${l1Index + 1}-${k + 1}`,
+                    hex: childHex,
+                    recipe: formatIngredientsToString(childIngredients)
+                });
+            }
+        });
+
+        function generateCustomL2Colors(baseHex) {
+            const list = [];
+            const [h, s, l] = hexToHsl(baseHex);
+            const baseIng = estimatePaintRecipeMap(baseHex);
+
+            for (let k = 0; k < 15; k++) {
+                const off = BROAD_L2_OFFSETS[k];
+                let newH = (h + off.dh + 360) % 360;
+                let newS = Math.min(100, Math.max(10, s + off.ds));
+                let newL = Math.min(92, Math.max(12, l + off.dl));
+
+                const childHex = hslToHex(newH, newS, newL);
+                let childIngredients = createLogicalChildRecipe(baseIng, off.mod);
+
+                list.push({
+                    id: `custom-${k + 1}`,
+                    hex: childHex,
+                    recipe: formatIngredientsToString(childIngredients)
+                });
+            }
+            return list;
+        }
+
+        function estimatePaintRecipeMap(hex) {
+            const [h, s, l] = hexToHsl(hex);
+            if (l > 85) return { '白': 3.5, '茶色': 0.2, '黄色': 0.3 };
+            if (l < 20) return { '黒': 3.5, '青': 0.5 };
+
+            if (h >= 340 || h < 20) return { '赤': 3, '朱色': 0.8, '白': 0.2 };
+            if (h >= 20 && h < 50)  return { '朱色': 2, '黄色': 2 };
+            if (h >= 50 && h < 80)  return { '黄色': 3.5, '黄緑': 0.5 };
+            if (h >= 80 && h < 160) return { '黄緑': 2, '緑': 2 };
+            if (h >= 160 && h < 220) return { '水色': 3, '青': 1 };
+            if (h >= 220 && h < 280) return { '青': 3.5, '白': 0.5 };
+            return { '青': 2, '赤': 1.5, '白': 0.5 };
+        }
+
+        /**
+         * STREAMING_CHUNK: Formatting vertical recipe with top alignment and line break at dots
+         */
+        function formatRecipeToVerticalHTML(recipeStr) {
+            if (!recipeStr) return '';
+            const parts = recipeStr.split(/\s{2,}/).map(p => p.trim()).filter(Boolean);
+
+            const itemsHTML = parts.map(part => {
+                const tokens = part.split(' ');
+                if (tokens.length < 2) return `<div class="text-[11px] font-bold text-gray-800 leading-snug">${part}</div>`;
+                
+                const name = tokens[0].replace('<br>', '');
+                const amount = parseFloat(tokens[1]);
+
+                if (isNaN(amount)) return `<div class="text-[11px] font-bold text-gray-800 leading-snug">${part}</div>`;
+
+                let icons = '';
+                let remaining = amount;
+
+                if (amount >= 0.5) {
+                    while (remaining >= 1) {
+                        icons += '●';
+                        remaining -= 1;
+                    }
+                    if (remaining >= 0.49) {
+                        icons += '◐';
+                    }
+                }
+
+                // Display ● icons on top row, color name and numeric amount below to avoid cut-off
+                const iconHeader = icons ? `<div class="text-amber-600 text-[10px] leading-none mb-0.5">${icons}</div>` : '';
+                return `
+                    <div class="flex flex-col bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/60 leading-tight w-full">
+                        ${iconHeader}
+                        <div class="flex items-center justify-between text-[11px] md:text-xs text-gray-800 font-bold gap-1">
+                            <span class="truncate">${name}</span>
+                            <span class="font-mono bg-white px-1 py-0.2 rounded text-[10px] text-gray-700 font-extrabold border border-black/10 shrink-0">${amount}</span>
+                        </div>
+                    </div>`;
+            });
+
+            return `<div class="flex flex-col gap-0.5 w-full justify-start overflow-hidden">${itemsHTML.join('')}</div>`;
+        }
+
+        /**
+         * STREAMING_CHUNK: Formatting detailed recipe modal with 1 line per paint ingredient
+         */
+        function renderModalRecipeLinesHTML(recipeStr) {
+            if (!recipeStr) return '';
+            const parts = recipeStr.split(/\s{2,}/).map(p => p.trim()).filter(Boolean);
+
+            const linesHTML = parts.map(part => {
+                const tokens = part.split(' ');
+                if (tokens.length < 2) {
+                    return `<div class="p-2.5 bg-white rounded-xl border border-amber-200 font-bold text-gray-800 text-sm md:text-base">${part}</div>`;
+                }
+                const name = tokens[0].replace('<br>', '');
+                const amount = parseFloat(tokens[1]);
+                if (isNaN(amount)) {
+                    return `<div class="p-2.5 bg-white rounded-xl border border-amber-200 font-bold text-gray-800 text-sm md:text-base">${part}</div>`;
+                }
+
+                let icons = '';
+                let remaining = amount;
+
+                if (amount >= 0.5) {
+                    while (remaining >= 1) {
+                        icons += '●';
+                        remaining -= 1;
+                    }
+                    if (remaining >= 0.49) {
+                        icons += '◐';
+                    }
+                }
+
+                return `
+                    <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-amber-200 shadow-xs w-full">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-600 text-base md:text-lg leading-none">${icons}</span>
+                            <span class="font-bold text-gray-800 text-sm md:text-base">${name}</span>
+                        </div>
+                        <span class="font-mono font-extrabold text-xs md:text-sm bg-amber-100 text-amber-950 px-2 py-0.5 rounded-md border border-amber-300">${amount}</span>
+                    </div>`;
+            });
+
+            return linesHTML.join('');
+        }
+
+        // Render Palette Cards Grid
+        function renderPaletteGrid() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+
+            if (currentLevel === 1) {
+                LEVEL_1_DATA.forEach((color, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'color-card-container flex items-center gap-1.5 md:gap-2 cursor-pointer group h-full overflow-hidden w-full bg-white/90 p-1.5 md:p-2 rounded-xl md:rounded-2xl border border-black/5 shadow-xs hover:shadow-md transition';
+                    card.onclick = () => navigateToLevel(2, index);
+
+                    const recipeStr = formatIngredientsToString(color.baseIngredients);
+
+                    card.innerHTML = `
+                        <!-- Left: Flat Color Panel -->
+                        <div class="flat-square w-15 h-15 sm:w-18 sm:h-18 md:w-20 md:h-20 aspect-square flex-shrink-0" style="background-color: ${color.hex};"></div>
+                        
+                        <!-- Right: Info & Recipe Stacked Vertically Top-Aligned -->
+                        <div class="flex flex-col justify-start flex-1 min-h-0 h-full overflow-hidden text-left gap-0.5 py-0.5">
+                            <div class="flex items-baseline justify-between gap-1 mb-0.5 shrink-0">
+                                <span class="font-title text-xs sm:text-sm text-gray-800 leading-tight">${color.name}</span>
+                                <span class="text-[9px] font-mono text-gray-400 font-bold shrink-0">${color.hex}</span>
+                            </div>
+                            <!-- Vertical Top-Aligned Recipe List -->
+                            ${formatRecipeToVerticalHTML(recipeStr)}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else if (currentLevel === 2) {
+                const parentName = customParentColor ? 'しゃしんの色' : LEVEL_1_DATA[selectedL1Index].name.replace('<br>', '');
+                const l2Items = customParentColor 
+                    ? generateCustomL2Colors(`#${customParentColor}`)
+                    : COLOR_DATABASE[selectedL1Index];
+
+                l2Items.forEach((color, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'color-card-container flex items-center gap-1.5 md:gap-2 cursor-pointer group h-full overflow-hidden w-full bg-white/90 p-1.5 md:p-2 rounded-xl md:rounded-2xl border border-black/5 shadow-xs hover:shadow-md transition';
+                    card.onclick = () => openModal(color.hex, color.recipe, 2);
+
+                    card.innerHTML = `
+                        <!-- Left: Flat Color Panel -->
+                        <div class="flat-square w-15 h-15 sm:w-18 sm:h-18 md:w-20 md:h-20 aspect-square flex-shrink-0" style="background-color: ${color.hex};"></div>
+                        
+                        <!-- Right: Info & Recipe Stacked Vertically Top-Aligned -->
+                        <div class="flex flex-col justify-start flex-1 min-h-0 h-full overflow-hidden text-left gap-0.5 py-0.5">
+                            <div class="flex items-center justify-between mb-0.5 shrink-0">
+                                <span class="text-xs font-mono text-gray-500 font-extrabold">${color.hex}</span>
+                            </div>
+                            <!-- Vertical Top-Aligned Recipe List -->
+                            ${formatRecipeToVerticalHTML(color.recipe)}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        function triggerPhotoUpload() {
+            const input = document.getElementById('photo-input');
+            input.value = ''; // Reset input value so selecting same file works reliably
+            input.click();
+        }
+
+        // Show Toast Notification (Replaces alert)
+        function showNotification(msg) {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            toastText.innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Drag and Drop Handling
+        function handleDragOver(evt) {
+            evt.preventDefault();
+            const container = document.getElementById('photo-container');
+            container.classList.add('border-teal-500', 'bg-teal-50/50');
+        }
+
+        function handleDragLeave(evt) {
+            evt.preventDefault();
+            const container = document.getElementById('photo-container');
+            container.classList.remove('border-teal-500', 'bg-teal-50/50');
+        }
+
+        function handleDrop(evt) {
+            evt.preventDefault();
+            const container = document.getElementById('photo-container');
+            container.classList.remove('border-teal-500', 'bg-teal-50/50');
+
+            if (evt.dataTransfer.files && evt.dataTransfer.files[0]) {
+                processImageFile(evt.dataTransfer.files[0]);
+            }
+        }
+
+        function handlePhotoSelect(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            processImageFile(file);
+        }
+
+        function processImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showNotification('画像ファイル（JPG、PNGなど）を選んでね！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                loadImageToCanvas(e.target.result);
+            };
+            reader.onerror = function() {
+                showNotification('写真を開くことができませんでした。');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Preset Sample Images for Quick Testing
+        function loadSampleImage(type) {
+            const samples = {
+                'flowers': 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800&auto=format&fit=crop&q=80',
+                'sky': 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=800&auto=format&fit=crop&q=80',
+                'aurora': 'https://images.unsplash.com/photo-1507272931001-fc06c17e4f43?w=800&auto=format&fit=crop&q=80'
+            };
+            if (samples[type]) {
+                showNotification('サンプル写真をよみこんでいるよ...');
+                loadImageToCanvas(samples[type]);
+            }
+        }
+
+        function clearPhoto() {
+            const canvas = document.getElementById('photo-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.classList.add('hidden');
+
+            const placeholder = document.getElementById('photo-placeholder-text');
+            placeholder.classList.remove('hidden');
+            placeholder.classList.add('flex');
+
+            const target = document.getElementById('picker-target');
+            if (target) {
+                target.classList.add('hidden');
+            }
+
+            const input = document.getElementById('photo-input');
+            if (input) input.value = '';
+
+            showNotification('しゃしんをけしたよ');
+        }
+
+        function loadImageToCanvas(imageSrc) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // Support CORS for online samples
+            img.onload = function() {
+                const canvas = document.getElementById('photo-canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                
+                let width = img.width;
+                let height = img.height;
+                const maxDimension = 1200;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+
+                document.getElementById('photo-placeholder-text').classList.add('hidden');
+                document.getElementById('photo-placeholder-text').classList.remove('flex');
+                canvas.classList.remove('hidden');
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Auto pick center color initially
+                const centerX = Math.floor(width / 2);
+                const centerY = Math.floor(height / 2);
+                
+                // Get canvas bounding client rect to position target at center
+                const rect = canvas.getBoundingClientRect();
+                const centerClientX = rect.left + rect.width / 2;
+                const centerClientY = rect.top + rect.height / 2;
+
+                sampleCanvasHoverColor(centerX, centerY);
+                sampleCanvasColor(centerX, centerY);
+                updatePickerTargetPosition(centerClientX, centerClientY);
+
+                // Setup fluid mouse/touch interaction for click-to-pick
+                setupCanvasInteractions(canvas);
+            };
+
+            img.onerror = function() {
+                showNotification('画像を開けませんでした。別の画像を選んでみてください。');
+            };
+
+            img.src = imageSrc;
+        }
+
+        function setupCanvasInteractions(canvas) {
+            function getCanvasCoords(evt) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = evt.clientX;
+                const clientY = evt.clientY;
+
+                if (clientX === undefined || clientY === undefined) return null;
+
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                let x = Math.floor((clientX - rect.left) * scaleX);
+                let y = Math.floor((clientY - rect.top) * scaleY);
+
+                x = Math.max(0, Math.min(canvas.width - 1, x));
+                y = Math.max(0, Math.min(canvas.height - 1, y));
+
+                return { x, y, clientX, clientY };
+            }
+
+            // Move (+) crosshair and update □ color preview on hover/drag
+            canvas.onpointermove = function(evt) {
+                const coords = getCanvasCoords(evt);
+                if (coords) {
+                    sampleCanvasHoverColor(coords.x, coords.y);
+                    updatePickerTargetPosition(coords.clientX, coords.clientY);
+                }
+            };
+
+            // Lock and decide color on click / tap
+            canvas.onpointerdown = function(evt) {
+                const coords = getCanvasCoords(evt);
+                if (coords) {
+                    sampleCanvasColor(coords.x, coords.y);
+                    updatePickerTargetPosition(coords.clientX, coords.clientY);
+
+                    // Click animation feedback on the □ color box
+                    const colorBox = document.getElementById('picker-color-box');
+                    if (colorBox) {
+                        colorBox.style.transform = 'scale(1.25)';
+                        setTimeout(() => colorBox.style.transform = 'scale(1)', 150);
+                    }
+                }
+            };
+        }
+
+        // Display (+) crosshair & □ color preview box
+        function updatePickerTargetPosition(clientX, clientY) {
+            const target = document.getElementById('picker-target');
+            const container = document.getElementById('photo-container').getBoundingClientRect();
+            
+            const left = clientX - container.left;
+            const top = clientY - container.top;
+
+            if (target) {
+                target.style.left = `${left}px`;
+                target.style.top = `${top}px`;
+                target.classList.remove('hidden');
+            }
+        }
+
+        // Live hover preview inside □ color box
+        function sampleCanvasHoverColor(x, y) {
+            const canvas = document.getElementById('photo-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            try {
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1).toUpperCase()}`;
+                
+                const colorBox = document.getElementById('picker-color-box');
+                if (colorBox) {
+                    colorBox.style.backgroundColor = hex;
+                }
+            } catch(e) {
+                console.error("Color sampling error:", e);
+            }
+        }
+
+        // Confirm color decision on click/tap
+        function sampleCanvasColor(x, y) {
+            const canvas = document.getElementById('photo-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            try {
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1).toUpperCase()}`;
+                
+                pickedColorHex = hex;
+                document.getElementById('picked-color-swatch').style.backgroundColor = hex;
+                document.getElementById('picked-color-hex').innerText = hex;
+            } catch(e) {
+                console.error("Color sampling error:", e);
+            }
+        }
+
+        function usePickedColor() {
+            customParentColor = pickedColorHex.replace('#', '');
+            navigateToLevel(2);
+        }
+
+        function openModal(hex, recipe, level) {
+            document.getElementById('modal-swatch').style.backgroundColor = hex;
+            document.getElementById('modal-hex-code').innerText = hex;
+            document.getElementById('modal-level-tag').innerText = `第${level}階層`;
+            document.getElementById('modal-recipe-string').innerHTML = renderModalRecipeLinesHTML(recipe);
+
+            document.getElementById('recipe-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('recipe-modal').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            navigateToLevel(1);
+        };
+    </script>
+</body>
+</html>
